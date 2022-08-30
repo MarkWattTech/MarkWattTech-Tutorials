@@ -5,7 +5,7 @@
 <img src="https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Images/thumbnails/kiosk.png" width="500">
   </br>
                                                                                                                                           
-<p>In this one I show you how to setup and build your own DIY Home Assistant Kiosk. Check the video out <a href="https://youtu.be/M3-m2fDttmg" target="_blank">Here</a></p> 
+<p>In this one I show you how to setup and build your own DIY Home Assistant Kiosk. Check the video out <a href="https://youtu.be/4hN0_yGVdUQ" target="_blank">Here</a></p> 
 </h2>	
 
 <h2> Commands for Pi (In order of Use) </h2>
@@ -121,3 +121,16 @@ sudo reboot
 </br>
 <p> The code for this guide was based off <a href="https://desertbot.io/blog/raspberry-pi-touchscreen-kiosk-setup" target="_blank">Desertbots</a></p>  Kiosk guide. I modified the commands and config to suit the 7inch screen for the TS7 Pro
 and to remove some other things like hiding scroll bars.</p>
+
+</br>
+
+`SHELL COMMAND` - shell_commands.yaml
+```
+shutdown_pitouch: "ssh -i /config/ssh_keys/id_rsa_homeassistant -o 'StrictHostKeyChecking=no' homeassistant@pitouch.local sudo shutdown -h now"
+```
+<p> For the above command you will also need to include `shell_commands.yaml` in your HA includes in your config.yaml file. SSH between HA and your remote Pi must also be configured.
+
+If all of the above sounds like gibberish then there is a great written guide available <a href="https://www.creatingsmarthome.com/index.php/2022/02/12/guide-start-up-and-shut-down-remote-linux-pc-using-home-assistant/" target="_blank">here</a></p>
+
+</br>
+<h2> Don't forget to drop me a like if you would like to see more content like this!</h2>
