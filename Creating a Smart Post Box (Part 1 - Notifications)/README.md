@@ -57,7 +57,7 @@ action:
 </br>
 
 
-`Announcements for Mail` - An automation to send a series of announcemenrts/notifications in parallel on mail delivery
+`Announcements for Mail` - An automation to send a series of announcements/notifications in parallel on mail delivery
 
 ``` yaml
 # Announcements for mail
@@ -94,3 +94,30 @@ action:
 mode: parallel
 max: 10
 ```
+</br>
+<h2> Post Box Wall Panel Icon</h2>
+<p> The wall panel icon is created using the custom button card (you will need to install this via HACS).</p>
+
+`Wall Panel Icon` - A visual representation to show if theres any post and what time post arrived.
+
+``` yaml
+  - type: custom:button-card
+    entity: input_boolean.post_to_collect
+    color: white
+    show_state: false
+    tap_action:
+      action: more-info
+    state:
+      - value: 'off'
+        icon: mdi:email-off-outline
+        name: No Post
+        color: rgba(0,0,0,0.3)
+      - value: 'on'
+        icon: mdi:email-alert
+        name: |
+          [[[
+            var time_delivered = states["input_datetime.post_time"].state;
+            return 'Post arrived at ' + time_delivered 
+          ]]] 
+```
+<p> To display the time on the button card I am capturing the time from a date time helper called <b>input_datetime.post_time</b></p>
