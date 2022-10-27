@@ -21,10 +21,76 @@
 
 `Turn on Post to Collect` - An automation to turn on the post to collect boolean if the letterbox or mail draw is opened
 ``` yaml
-# Turn on Post to Collect
+# Post Box Mail Draw Opened
+mode: single
+trigger:
+  - platform: state
+    entity_id:
+      - binary_sensor.post_box_maildraw_contact
+    to: "on"
+condition: []
+action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.post_to_collect
 
+# Post Box Letterbox Opened
+mode: single
+trigger:
+  - platform: state
+    entity_id:
+      - binary_sensor.post_box_letter_contact
+    to: "on"
+condition: []
+action:
+  - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.post_to_collect
 ```
-<p> Since creating the video I have opted to move post box notifications into a node red flow to make them visually easier to see.
+</br>
+
+<p> Since creating the video I have opted to move post box notifications into a node red flow to make them visually easier to see.</p>
+</br>
 <img src="https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Images/images/post_box_node_red.png" width="500">
 </br>
 
+
+`Announcements for Mail` - An automation to send a series of announcemenrts/notifications in parallel on mail delivery
+
+``` yaml
+# Announcements for mail
+alias: You have mail announcement
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - input_boolean.post_to_collect
+    to: "on"
+condition: []
+action:
+  - service: notify.mobile_app_marks_iphone
+    data:
+      message: There's some post waiting for you.
+      title: You have mail!
+  - service: tts.cloud_say
+    data:
+      entity_id: media_player.kitchen_sonos
+      message: "Congratulations, you have mail! "
+  - service: notify.mobile_app_rachels_iphone_11pro_2
+    data:
+      message: >-
+        You have some post to collect from the outside postbox. Maybe you could
+        collect it? 
+      title: You have Post!
+  - service: notify.marks_lametric
+    data:
+      message: There's Post in the Postbox!
+      data:
+        icon: "2659"
+        sound: positive2
+        cycles: 0
+mode: parallel
+max: 10
+```
