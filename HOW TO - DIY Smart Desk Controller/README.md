@@ -3,6 +3,7 @@
 This ESPHome project turns your ESP32 and Nextion display into a full-fledged control center for your Flexispot E7Q standing desk, smart lights, fan, and more. Perfect for creators, makers, and smart home geeks who want an integrated experience.
 
 ![Project Preview](https://your-image-url-here.com)
+<br>
 
 ## 📦 Features
 
@@ -13,6 +14,8 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 - Custom height range with Home Assistant integration
 - Auto screen brightness via virtual switch
 - Built-in desk height number entity
+<br>
+<br>
 
 ## 🧰 Hardware Required
 
@@ -25,6 +28,22 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 | Optional Accessories| LED strips, smart plugs, HA entities     | [Buy on Amazon](#)         |
 
 *The above are affiliate links. Using these doesn't cost you anything extra, but it helps support the channel — thanks!* 💙
+<br>
+<br>
+
+## 💻 Software Requirements
+
+The following software must be installed and set up:
+
+| Software          | Description |
+|-------------------|-------------|
+| [Nextion Editor](https://nextion.tech/nextion-editor/) | Used to design and build the touchscreen interface (HMI file). |
+| [Home Assistant](https://www.home-assistant.io/)       | Central hub that manages devices, automations, and the interface for notifications and toggles. |
+| [ESPHome](https://esphome.io/)                          | Used to compile and upload firmware to the ESP32, and bridge communication between hardware and Home Assistant. |
+
+All three are essential for full functionality.
+<br>
+<br>
 
 ## 📁 Repository Structure
 
@@ -35,6 +54,8 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 ├── images/                   # Screenshots and wiring diagrams
 └── README.md                 # You're here!
 ```
+<br>
+<br>
 
 ## ⚙️ Getting Started
 
@@ -54,6 +75,8 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 4. Flash to your ESP32 via USB or OTA
 5. Connect your Nextion display (TX/RX/GND) to GPIOs 4 and 5 (adjust as needed)
 6. Optionally update or load the `.hmi` file to match your screen layout
+<br>
+<br>
 
 ## 🔌 Wiring Guide
 
@@ -65,6 +88,8 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 | Nextion RX       | GPIO4     | From ESP to Nextion         |
 | Nextion GND      | GND       | Shared ground               |
 | Nextion VCC      | 5V        | Use USB or regulated source |
+<br>
+<br>
 
 ## 💡 Nextion Pages
 
@@ -74,6 +99,8 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 | 1       | Lights            | Toggle lights/fan/buttons    |
 | 2       | Desk              | Stand/sit/presets/display cm |
 | 3       | Notification      | Title + message from HA      |
+<br>
+<br>
 
 ## 🧠 Custom Logic Highlights
 
@@ -81,17 +108,22 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 - UART commands to move desk or trigger presets
 - Home Assistant `text_sensor` to display HA input_text entities on Nextion
 - `cover` component used to represent desk with proper open/close/stop
+<br>
+<br>
 
 ## 📢 Credits
 
 - Desk control: [@iMicknl](https://github.com/iMicknl/LoctekMotion_IoT)
 - Project and code: [Mark Watt Tech](https://youtube.com/@MarkWattTech)
+<br>
+<br>
 
 ## 🧪 Want to Contribute?
 
 PRs welcome! Add new pages, UI improvements, or other desk models. Let's make this the best Flexispot control stack out there 💪
 
 ---
+<br>
 
 ### 💬 Questions / Support
 
@@ -100,6 +132,7 @@ Drop an issue in the GitHub repo or hit me up on Twitter/X or YouTube comments!
 > "Standing desks are better when you can control them with style."
 
 ---
+<br>
 
 ### ☕ Support My Work
 
