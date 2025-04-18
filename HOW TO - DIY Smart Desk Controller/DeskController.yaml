@@ -1,0 +1,670 @@
+substitutions:
+  #-------------------------------
+  # Section 1 - Device Naming
+  #-------------------------------
+  display_name: Nextion Key Light and Desk Control
+  device_name: Flexispot E7Q
+  name: flexispot_e7q
+  
+  #-------------------------------
+  # Section 2 - Desk Heigh Limits (in cm)
+  #-------------------------------
+  min_height: "79"  # Min height + 0.1
+  max_height: "113" # Max height - 0.1
+  
+  #-------------------------------
+  # Section 3 - Credentials
+  #-------------------------------
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  wifi_ap_ssid: "Combined Fallback Hotspot"
+  wifi_ap_password: "Ss8DFnbVgti"
+  
+  # API Encryption Key
+  api_key: "JJmgHTG3pewaU9/nobHzRBrekgVb/Zf6qhXyXY/oT0g="
+  
+  # OTA Password
+  ota_password: "99ab8b62c4de8d68b556b5ac2a13e750"
+  
+  #-------------------------------
+  # Section 4 - HA Entity IDs for Notifications
+  #-------------------------------
+  
+  ha_notification_title: input_text.notification_title
+  ha_notification_message: input_text.notification_message
+  ha_virtual_screen: switch.virtual_screen
+  
+  #-------------------------------
+  # Section 5 - HA Entity IDs for Buttons on Lights Page
+  #-------------------------------
+  
+  button_1: light.left_key_light      # Button 1: Left Key Light
+  button_2: light.right_key_light     # Button 2: Right Key Light
+  button_3: light.ring_light          # Button 3: Ring Light
+  button_4: switch.playroom_light     # Button 4: Playroom Light
+  button_5: fan.office_fan            # Button 5: Office Fan
+
+# ESPHome Configuration
+esphome:
+  name: ${name}
+
+# Global Variables
+globals:
+  - id: current_page
+    type: int
+    restore_value: no
+    initial_value: '0'  # Tracks the current Nextion page
+
+# Text Sensors for Notifications and Page Labels
+text_sensor:
+  # Notification Title from Home Assistant
+  - platform: homeassistant
+    entity_id: ${ha_notification_title}
+    id: notification_title
+    on_value:
+      then:
+        - lambda: |-
+            if (id(current_page) == 3) {  // Update only on Notification Page
+              id(my_nextion).send_command(("t0.txt=\"" + id(notification_title).state + "\"").c_str());
+            }
+  # Notification Message from Home Assistant
+  - platform: homeassistant
+    entity_id: ${ha_notification_message}
+    id: notification_message
+    on_value:
+      then:
+        - lambda: |-
+            if (id(current_page) == 3) {  // Update only on Notification Page
+              id(my_nextion).send_command(("t1.txt=\"" + id(notification_message).state + "\"").c_str());
+            }
+  # Current Page Label for Debugging
+  - platform: template
+    name: "Current Page Label"
+    id: current_page_label
+    lambda: |-
+      switch (id(current_page)) {
+        case 0: return std::string("Home Page");
+        case 1: return std::string("Lights Page");
+        case 2: return std::string("Desk Page");
+        case 3: return std::string("Notification Page");
+        default: return std::string("Unknown Page");
+      }
+    update_interval: never
+
+# ESP32 Board Configuration
+esp32:
+  board: esp32dev
+
+# WiFi Configuration
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  ap:
+    ssid: ${wifi_ap_ssid}
+    password: ${wifi_ap_password}
+
+captive_portal:
+
+# Home Assistant API Integration
+api:
+  encryption:
+    key: ${api_key}
+
+# Over-the-Air Updates
+ota:
+  platform: esphome
+  password: ${ota_password}
+
+# Logging (Disabled Serial Logging to Free UART)
+logger:
+  baud_rate: 0
+
+# External Component for Desk Control
+external_components:
+  source: github://iMicknl/LoctekMotion_IoT@v2
+  components: [ loctekmotion_desk_height ]
+
+# UART Configuration
+uart:
+  - id: desk_uart
+    tx_pin: GPIO17  # Desk TX Pin
+    rx_pin: GPIO16  # Desk RX Pin
+    baud_rate: 9600
+  - id: nextion_uart
+    tx_pin: GPIO4   # Nextion TX Pin
+    rx_pin: GPIO5   # Nextion RX Pin
+    baud_rate: 9600
+
+# Time Synchronization
+time:
+  - platform: sntp
+    id: sntp_time
+
+# Sensors
+sensor:
+  # Desk Height Sensor
+  - platform: loctekmotion_desk_height
+    uart_id: desk_uart
+    id: desk_height
+    name: Desk Height
+    on_value_range:
+      - below: ${min_height}
+        then:
+          - switch.turn_off: switch_down  # Stop if below min height
+      - above: ${max_height}
+        then:
+          - switch.turn_off: switch_up    # Stop if above max height
+    on_value:
+      then:
+        - cover.template.publish:
+            id: desk_cover
+            position: !lambda |-
+              float position = (float(x) - float(${min_height})) / (float(${max_height}) - float(${min_height}));
+              return position;  // Calculate position as 0-1 range
+        - component.update: set_desk_height
+        - lambda: |-
+            char buf[30];
+            sprintf(buf, "t0.txt=\"%.1f cm\"", x);
+            if (id(current_page) == 2) {  // Update label on Desk Page
+              id(my_nextion).send_command(buf);
+            }
+  # WiFi Signal Strength
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+  # Raw Uptime Sensor
+  - platform: uptime
+    name: "Uptime Raw"
+    id: raw_uptime
+  # Pretty Uptime (Hours * 100 + Minutes)
+  - platform: template
+    name: "Uptime"
+    lambda: |-
+      int seconds = (int) id(raw_uptime).state;
+      int minutes = (seconds / 60) % 60;
+      int hours = seconds / 3600;
+      return hours * 100 + minutes;
+    update_interval: 60s
+    id: uptime_pretty
+
+# Switches
+switch:
+  # Desk Up Control
+  - platform: uart
+    name: "Desk Up"
+    id: switch_up
+    data: [0x9b, 0x06, 0x02, 0x01, 0x00, 0xfc, 0xa0, 0x9d]
+    uart_id: desk_uart
+    send_every: 108ms
+  # Desk Down Control
+  - platform: uart
+    name: "Desk Down"
+    id: switch_down
+    data: [0x9b, 0x06, 0x02, 0x02, 0x00, 0x0c, 0xa0, 0x9d]
+    uart_id: desk_uart
+    send_every: 108ms
+  # Virtual Screen Switch
+  - platform: gpio
+    name: "Virtual Screen"
+    pin:
+      number: GPIO23
+      mode: OUTPUT
+    restore_mode: ALWAYS_ON
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - button.press: btn_display_on   # Turn on Nextion display
+    on_turn_off:
+      then:
+        - button.press: btn_display_off  # Turn off Nextion display
+
+# Binary Sensors
+binary_sensor:
+  # Virtual Screen State from Home Assistant
+  - platform: homeassistant
+    entity_id: ${ha_virtual_screen}
+    id: ha_virtual_screen
+    on_state:
+      then:
+        - lambda: |-
+            if (id(ha_virtual_screen).state) {
+              id(my_nextion).send_command("dim=100");  // Screen on
+            } else {
+              id(my_nextion).send_command("dim=0");    // Screen off
+            }
+  # Button 3: Ring Light Toggle
+  - platform: nextion
+    page_id: 1
+    component_id: 3
+    id: p2
+    filters:
+      - delayed_off: 100ms
+    on_press:
+      then:
+        - logger.log: "Nextion Button 3 Pressed, toggling ring light."
+        - homeassistant.service:
+            service: light.toggle
+            data:
+              entity_id: ${button_3}
+  # Button 4: Playroom Light Toggle
+  - platform: nextion
+    page_id: 1
+    component_id: 4
+    id: p3
+    filters:
+      - delayed_off: 100ms
+    on_press:
+      then:
+        - logger.log: "Nextion Button 4 Pressed, toggling playroom light."
+        - homeassistant.service:
+            service: switch.toggle
+            data:
+              entity_id: ${button_4}
+  # Button 5: Office Fan Toggle
+  - platform: nextion
+    page_id: 1
+    component_id: 5
+    id: p4
+    filters:
+      - delayed_off: 100ms
+    on_press:
+      then:
+        - logger.log: "Nextion Button 5 Pressed, toggling office fan."
+        - homeassistant.service:
+            service: fan.toggle
+            data:
+              entity_id: ${button_5}
+  # Button 1: Left Key Light Toggle
+  - platform: nextion
+    page_id: 1
+    component_id: 1
+    id: p0
+    filters:
+      - delayed_off: 100ms
+    on_press:
+      then:
+        - logger.log: "Nextion Button Pressed, toggling left key light."
+        - homeassistant.service:
+            service: light.toggle
+            data:
+              entity_id: ${button_1}
+  # Button 2: Right Key Light Toggle
+  - platform: nextion
+    page_id: 1
+    component_id: 2
+    id: p1
+    filters:
+      - delayed_off: 100ms
+    on_press:
+      then:
+        - logger.log: "Nextion Button 2 Pressed, toggling right key light."
+        - homeassistant.service:
+            service: light.toggle
+            data:
+              entity_id: ${button_2}
+  # Button 1 State Sync
+  - platform: homeassistant
+    entity_id: ${button_1}
+    id: ha_button_1
+    on_state:
+      then:
+        - lambda: |-
+            if (id(current_page) == 1) {
+              if (id(ha_button_1).state) {
+                id(my_nextion).send_command("p0.pic=1");  // On icon
+              } else {
+                id(my_nextion).send_command("p0.pic=0");  // Off icon
+              }
+            }
+  # Button 2 State Sync
+  - platform: homeassistant
+    entity_id: ${button_2}
+    id: ha_button_2
+    on_state:
+      then:
+        - lambda: |-
+            if (id(current_page) == 1) {
+              if (id(ha_button_2).state) {
+                id(my_nextion).send_command("p1.pic=1");  // On icon
+              } else {
+                id(my_nextion).send_command("p1.pic=0");  // Off icon
+              }
+            }
+  # Button 3 State Sync
+  - platform: homeassistant
+    entity_id: ${button_3}
+    id: ha_button_3
+    on_state:
+      then:
+        - lambda: |-
+            if (id(current_page) == 1) {
+              if (id(ha_button_3).state) {
+                id(my_nextion).send_command("p2.pic=1");  // On icon
+              } else {
+                id(my_nextion).send_command("p2.pic=0");  // Off icon
+              }
+            }
+  # Button 4 State Sync
+  - platform: homeassistant
+    entity_id: ${button_4}
+    id: ha_button_4
+    on_state:
+      then:
+        - lambda: |-
+            if (id(current_page) == 1) {
+              if (id(ha_button_4).state) {
+                id(my_nextion).send_command("p3.pic=1");  // On icon
+              } else {
+                id(my_nextion).send_command("p3.pic=0");  // Off icon
+              }
+            }
+  # Button 5 State Sync
+  - platform: homeassistant
+    entity_id: ${button_5}
+    id: ha_button_5
+    on_state:
+      then:
+        - lambda: |-
+            if (id(current_page) == 1) {
+              if (id(ha_button_5).state) {
+                id(my_nextion).send_command("p4.pic=1");  // On icon
+              } else {
+                id(my_nextion).send_command("p4.pic=0");  // Off icon
+              }
+            }
+  # Desk Stand Preset Button
+  - platform: nextion
+    page_id: 2
+    component_id: 1
+    id: btn_desk_stand
+    filters:
+      - delayed_off: 100ms
+    on_release:
+      then:
+        - logger.log: "Standing Desk Stand button pressed."
+        - script.execute: desk_stand_script
+  # Desk Sit Preset Button
+  - platform: nextion
+    page_id: 2
+    component_id: 2
+    id: btn_desk_sit
+    filters:
+      - delayed_off: 100ms
+    on_release:
+      then:
+        - logger.log: "Standing Desk Sit button pressed."
+        - script.execute: desk_sit_script
+  # Desk Preset 3 Button
+  - platform: nextion
+    page_id: 2
+    component_id: 3
+    id: btn_desk_preset_3
+    filters:
+      - delayed_off: 100ms
+    on_release:
+      then:
+        - logger.log: "Standing Desk Preset 3 button pressed."
+        - script.execute: desk_preset3_script
+  # Desk Preset 4 Button
+  - platform: nextion
+    page_id: 2
+    component_id: 4
+    id: btn_desk_preset_4
+    filters:
+      - delayed_off: 100ms
+    on_release:
+      then:
+        - logger.log: "Standing Desk Preset 4 button pressed."
+        - script.execute: desk_preset4_script
+
+# Desk Cover Entity for Height Control
+cover:
+  - platform: template
+    id: "desk_cover"
+    icon: mdi:desk
+    name: "Desk"
+    device_class: blind
+    has_position: true
+    position_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return pos > id(desk_cover).position;
+          then:
+            - cover.open: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_cover).position >= pos;
+            - cover.stop: desk_cover
+          else:
+            - cover.close: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_cover).position <= pos;
+            - cover.stop: desk_cover
+    stop_action:
+      - switch.turn_off: switch_up
+      - switch.turn_off: switch_down
+    open_action:
+      - switch.turn_off: switch_down
+      - switch.turn_on: switch_up
+    close_action:
+      - switch.turn_off: switch_up
+      - switch.turn_on: switch_down
+    optimistic: false
+
+# Buttons for Navigation and Display Control
+button:
+  # Turn On Nextion Display
+  - platform: template
+    name: "Nextion Display On"
+    id: btn_display_on
+    on_press:
+      then:
+        - uart.write:
+            id: nextion_uart
+            data: ["0x64", "0x69", "0x6d", "0x3d", "0x31", "0x30", "0x30", "0xff", "0xff", "0xff"]
+  # Turn Off Nextion Display
+  - platform: template
+    name: "Nextion Display Off"
+    id: btn_display_off
+    on_press:
+      then:
+        - uart.write:
+            id: nextion_uart
+            data: ["0x64", "0x69", "0x6d", "0x3d", "0x30", "0xff", "0xff", "0xff"]
+  # Go to Home Page
+  - platform: template
+    name: "Go to Home Page"
+    icon: mdi:home
+    on_press:
+      then:
+        - lambda: |-
+            id(my_nextion).send_command("page 0");
+            id(current_page) = 0;
+            id(current_page_label).publish_state("Home Page");
+            ESP_LOGI("nextion", "Switched to page 0");
+  # Go to Lights Page
+  - platform: template
+    name: "Go to Lights Page"
+    icon: mdi:lightbulb-group
+    on_press:
+      then:
+        - lambda: |-
+            id(my_nextion).send_command("page 1");
+            id(current_page) = 1;
+            id(current_page_label).publish_state("Lights Page");
+            ESP_LOGI("nextion", "Switched to page 1");
+            if (id(ha_button_1).state) {
+              id(my_nextion).send_command("p0.pic=1");  // Button 1 on
+            } else {
+              id(my_nextion).send_command("p0.pic=0");  // Button 1 off
+            }
+            if (id(ha_button_2).state) {
+              id(my_nextion).send_command("p1.pic=1");  // Button 2 on
+            } else {
+              id(my_nextion).send_command("p1.pic=0");  // Button 2 off
+            }
+            if (id(ha_button_3).state) {
+              id(my_nextion).send_command("p2.pic=1");  // Button 3 on
+            } else {
+              id(my_nextion).send_command("p2.pic=0");  // Button 3 off
+            }
+            if (id(ha_button_4).state) {
+              id(my_nextion).send_command("p3.pic=1");  // Button 4 on
+            } else {
+              id(my_nextion).send_command("p3.pic=0");  // Button 4 off
+            }
+            if (id(ha_button_5).state) {
+              id(my_nextion).send_command("p4.pic=1");  // Button 5 on
+            } else {
+              id(my_nextion).send_command("p4.pic=0");  // Button 5 off
+            }
+  # Go to Desk Page
+  - platform: template
+    name: "Go to Desk Page"
+    icon: mdi:desk
+    on_press:
+      then:
+        - lambda: |-
+            id(my_nextion).send_command("page 2");
+            id(current_page) = 2;
+            id(current_page_label).publish_state("Desk Page");
+            ESP_LOGI("nextion", "Switched to page 2");
+            char buf[30];
+            sprintf(buf, "t0.txt=\"%.1f cm\"", id(desk_height).state);
+            id(my_nextion).send_command(buf);
+  # Go to Notification Page
+  - platform: template
+    name: "Go to Notification Page"
+    icon: mdi:bell
+    on_press:
+      then:
+        - lambda: |-
+            id(my_nextion).send_command("page 3");
+            id(current_page) = 3;
+            id(current_page_label).publish_state("Notification Page");
+            ESP_LOGI("nextion", "Switched to page 3");
+            id(my_nextion).send_command(("t0.txt=\"" + id(notification_title).state + "\"").c_str());
+            id(my_nextion).send_command(("t1.txt=\"" + id(notification_message).state + "\"").c_str());
+
+# Desk Height Number Control
+number:
+  - platform: template
+    name: "Desk Height"
+    id: set_desk_height
+    min_value: ${min_height}
+    max_value: ${max_height}
+    icon: mdi:ruler
+    unit_of_measurement: "cm"
+    device_class: "distance"
+    step: 0.1
+    lambda: |-
+      return id(desk_height).state;
+    set_action:
+      - if:
+          condition:
+            - lambda: |-
+                return x > id(desk_height).state;
+          then:
+            - cover.open: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_height).state >= x;
+            - cover.stop: desk_cover
+          else:
+            - cover.close: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_height).state <= x;
+            - cover.stop: desk_cover
+
+# Nextion Display Configuration
+display:
+  - platform: nextion
+    id: my_nextion
+    uart_id: nextion_uart
+    update_interval: 700ms
+    on_page:
+      then:
+        - lambda: |-
+            id(current_page) = x;
+            switch (x) {
+              case 0:
+                id(current_page_label).publish_state("Home Page");
+                ESP_LOGI("nextion", "Nextion switched to page 0");
+                break;
+              case 1:
+                id(current_page_label).publish_state("Lights Page");
+                ESP_LOGI("nextion", "Nextion switched to page 1");
+                if (id(ha_button_1).state) {
+                  id(my_nextion).send_command("p0.pic=1");  // Button 1 on
+                } else {
+                  id(my_nextion).send_command("p0.pic=0");  // Button 1 off
+                }
+                if (id(ha_button_2).state) {
+                  id(my_nextion).send_command("p1.pic=1");  // Button 2 on
+                } else {
+                  id(my_nextion).send_command("p1.pic=0");  // Button 2 off
+                }
+                if (id(ha_button_3).state) {
+                  id(my_nextion).send_command("p2.pic=1");  // Button 3 on
+                } else {
+                  id(my_nextion).send_command("p2.pic=0");  // Button 3 off
+                }
+                if (id(ha_button_4).state) {
+                  id(my_nextion).send_command("p3.pic=1");  // Button 4 on
+                } else {
+                  id(my_nextion).send_command("p3.pic=0");  // Button 4 off
+                }
+                if (id(ha_button_5).state) {
+                  id(my_nextion).send_command("p4.pic=1");  // Button 5 on
+                } else {
+                  id(my_nextion).send_command("p4.pic=0");  // Button 5 off
+                }
+                break;
+              case 2:
+                id(current_page_label).publish_state("Desk Page");
+                ESP_LOGI("nextion", "Nextion switched to page 2");
+                char buf[30];
+                sprintf(buf, "t0.txt=\"%.1f cm\"", id(desk_height).state);
+                id(my_nextion).send_command(buf);
+                break;
+              case 3:
+                id(current_page_label).publish_state("Notification Page");
+                ESP_LOGI("nextion", "Nextion switched to page 3");
+                id(my_nextion).send_command(("t0.txt=\"" + id(notification_title).state + "\"").c_str());
+                id(my_nextion).send_command(("t1.txt=\"" + id(notification_message).state + "\"").c_str());
+                break;
+              default:
+                id(current_page_label).publish_state("Unknown Page");
+                ESP_LOGI("nextion", "Nextion switched to unknown page");
+                break;
+            }
+
+# Scripts for Desk Presets
+script:
+  # Sit Position
+  - id: desk_sit_script
+    then:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x08, 0x00, 0xac, 0xa6, 0x9d]
+  # Stand Position
+  - id: desk_stand_script
+    then:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x04, 0x00, 0xac, 0xa3, 0x9d]
+  # Preset 3
+  - id: desk_preset3_script
+    then:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x00, 0x01, 0xac, 0x60, 0x9d]
+  # Preset 4
+  - id: desk_preset4_script
+    then:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x10, 0x00, 0xac, 0xac, 0x9d]
