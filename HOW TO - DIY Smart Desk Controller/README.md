@@ -1,8 +1,8 @@
-# 🛠 Flexispot E7Q + Nextion Control with ESPHome
+# 🛠 HOW TO - Create a Smart Touchscreen Desk Controller
 
-This ESPHome project turns your ESP32 and Nextion display into a full-fledged control center for your Flexispot E7Q standing desk, smart lights, fan, and more. Perfect for creators, makers, and smart home geeks who want an integrated experience.
-
-![Project Preview](https://your-image-url-here.com)
+<p>This ESPHome project turns your ESP32 and Nextion display into a full-fledged control center for your standing desk, smart lights, fan, and more. Perfect for creators, makers, and smart home enthusiasts who want to add additional functionality to there desks. Watch the full video <a href="https://youtu.be/jZzNDveuDVY" target="_blank">Here</a></p> 
+</h2>	
+<img src="https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Images/thumbnails/Smart%20Desk%20Controller%205.png" width="500">
 <br>
 
 ## 📦 Features
@@ -21,11 +21,16 @@ This ESPHome project turns your ESP32 and Nextion display into a full-fledged co
 
 | Item                | Example / Notes                          | Affiliate Link             |
 |---------------------|-------------------------------------------|-----------------------------|
-| ESP32 Dev Board     | ESP-WROOM-32 or similar                  | [Buy on Amazon](#)         |
-| Nextion Display     | 3.2" Basic (NX4024T032)                  | [Buy on Amazon](#)         |
-| Flexispot Desk      | E7Q (or any using LoctekMotion protocol) | [Buy on Amazon](#)         |
-| Wires + Power       | USB-C or 5V supply                       | [Buy on Amazon](#)         |
-| Optional Accessories| LED strips, smart plugs, HA entities     | [Buy on Amazon](#)         |
+| ESP32 Dev Board     | ESP-WROOM-32 or similar                  | [Buy on Amazon](https://amzn.to/4cER4tZ)         |
+| Nextion Display     | 3.2" Basic (NX4024T032)                  | [Buy on Amazon](https://amzn.to/3Gf7gps)         |
+| Nextion Display     | 3.2" Basic (NX4024T032)                  | [Buy on Amazon](https://amzn.to/4iZkVzL)         |
+| Nextion Display     | 2.4" Basic (NX4024T032)                  | [Buy on Amazon](https://amzn.to/424bzvi)         |
+| Flexispot Desk      | E7Q (or any using LoctekMotion protocol) | [Buy on Amazon](https://amzn.to/4ilDzk9)                               |
+| USB to TTL          | FT232 (DSD Tech)                         | [Buy on Amazon](https://amzn.to/4l0A0lO)         |
+| Dupont Wires        | Wires used for connecting esp32          | [Buy on Amazon](https://amzn.to/41UTSiZ)         |
+| Wago Connectors     | Optional for attatching wires            | [Buy on Amazon](https://amzn.to/3Y2zF8d)         |
+| RJ45 Pinout         | Board for ethernet pinout                | [Buy on Amazon](https://amzn.to/4jkL5gp)         |
+| SD Card             | Optional                                 | [Buy on Amazon](https://amzn.to/3EvchK8)         |
 
 *The above are affiliate links. Using these doesn't cost you anything extra, but it helps support the channel — thanks!* 💙
 <br>
@@ -45,22 +50,22 @@ All three are essential for full functionality.
 <br>
 <br>
 
-## 📁 Repository Structure
+## ✅ Compatible Desks
 
-```
-.
-├── flexispot_e7q.yaml         # ESPHome configuration
-├── nextion_display.hmi       # (Optional) Nextion editor file
-├── images/                   # Screenshots and wiring diagrams
-└── README.md                 # You're here!
-```
+The following software must be installed and set up:
+
+| Desk               | Controller Model Number |
+|--------------------|-------------------------|
+| [Flexispot E7Q](https://flexispot.co.uk/4-leg-standing-desk-e7q) | U                       |
+
+
 <br>
-<br>
 
-## ⚙️ Getting Started
 
-1. **Clone this repo** or copy the `flexispot_e7q.yaml` file into your ESPHome dashboard
-2. Edit the following values:
+## ⚙️ The ESPHome Section
+
+1. **Clone this repo** or copy the `DeskController.yaml` file into your ESPHome dashboard
+2. Edit the substitution values (5 sections):
    ```yaml
    substitutions:
      min_height: "79"    # Your desk's min height + 0.1
@@ -88,6 +93,9 @@ All three are essential for full functionality.
 | Nextion RX       | GPIO4     | From ESP to Nextion         |
 | Nextion GND      | GND       | Shared ground               |
 | Nextion VCC      | 5V        | Use USB or regulated source |
+
+
+See additional diagrams in the diagram folder
 <br>
 <br>
 
@@ -129,7 +137,6 @@ PRs welcome! Add new pages, UI improvements, or other desk models. Let's make th
 
 Drop an issue in the GitHub repo or hit me up on Twitter/X or YouTube comments!
 
-> "Standing desks are better when you can control them with style."
 
 ---
 <br>
