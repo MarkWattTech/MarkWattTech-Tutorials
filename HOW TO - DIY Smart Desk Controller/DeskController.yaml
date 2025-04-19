@@ -7,7 +7,7 @@ substitutions:
   name: flexispot_e7q
   
   #-------------------------------
-  # Section 2 - Desk Heigh Limits (in cm)
+  # Section 2 - Desk Height Limits (in cm)
   #-------------------------------
   min_height: "79"  # Min height + 0.1
   max_height: "113" # Max height - 0.1
