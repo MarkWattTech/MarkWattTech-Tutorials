@@ -26,7 +26,7 @@ This ESPHome project shows you how to unlock the hidden potential of the **Home 
 | Grove Sensor (SGP30)       | VOC + eCO2 Sensor                  | [Seeed SGP30](https://www.seeedstudio.com/)                                  |
 | Grove I2C Hub              | 6-Port Expansion Hub               | [Seeed Grove Hub](https://www.seeedstudio.com/)                              |
 | Grove Cables               | For connecting sensors             | Included with most sensors                                                   |
-| 3D Printed Case (optional) | Custom VPE case with Grove cutouts | [Download STL from HA Docs](https://www.home-assistant.io/voice/vpe/extend/) |
+| 3D Printed Case (optional) | Custom VPE case with Grove cutouts | [Download STL from MakerWorld](https://makerworld.com/en/models/885769-home-assistant-voice-preview-edition-enclosure#profileId-840903) |
 
 *Affiliate links support the channel at no extra cost. Thanks!* 💙
 
@@ -94,6 +94,61 @@ sensor:
 *NOTE: Let the SGP30 run for \~12 hours before setting the baseline values.*
 
 ---
+
+## FULL VPE Code
+
+```yaml
+substitutions:
+  name: home-assistant-voice-091a18
+  friendly_name: Office VPE
+
+packages:
+  Nabu Casa.Home Assistant Voice PE: github://esphome/home-assistant-voice-pe/home-assistant-voice.yaml
+  grove-i2c: github://esphome/home-assistant-voice-pe/modules/grove-i2c.yaml
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+
+api:
+  encryption:
+    key: opg1IIG0TjOcf3y34CrmkTnK6486y4xTb/GL7QCyxtI=
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+logger:
+  level: DEBUG  # Detailed logging for I2C and sensor diagnostics
+
+sensor:
+  - platform: aht10
+    i2c_id: grove_i2c
+    variant: AHT20
+    address: 0x38
+    temperature:
+      name: "Office Temperature"
+      id: office_temperature
+    humidity:
+      name: "Office Humidity"
+      id: office_humidity
+    update_interval: 60s
+
+  - platform: sgp30
+    i2c_id: grove_i2c
+    address: 0x58
+    eco2:
+      name: "Office eCO2"
+      id: office_eco2
+    tvoc:
+      name: "Office TVOC"
+      id: office_tvoc
+    update_interval: 1s
+    baseline:
+      eco2_baseline: 0  # Update after 12-hour burn-in
+      tvoc_baseline: 0  # Update after 12-hour burn-in
+```
 
 ## 🧠 Beyond the Grove Port
 
