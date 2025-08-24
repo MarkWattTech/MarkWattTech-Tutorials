@@ -1,0 +1,590 @@
+substitutions:
+  # Custom version number
+  version_number: "1.0.0"
+  
+  # ==== Page 1 labels ====
+  p1_b1_label: "1: Spots"
+  p1_b2_label: "2: KL Left"
+  p1_b3_label: "3: Ring Light"
+  p1_b4_label: "4: KL Right"
+
+  # ==== Page 2 labels ====
+  p2_b1_label: "1: Heating"
+  p2_b2_label: "2: Cooling"
+  p2_b3_label: "3: Away"
+  p2_b4_label: "4: Home"
+
+  # ==== Page 3 labels ====
+  p3_b1_label: "1: Office Fan"
+  p3_b2_label: "2: Desk Lamp"
+  p3_b3_label: "3: Monitor"
+  p3_b4_label: "4: PC"
+
+  # ==== Page 4 labels ====
+  p4_b1_label: "1: Movie"
+  p4_b2_label: "2: Chill"
+  p4_b3_label: "3: Party"
+  p4_b4_label: "4: Off All"
+
+esphome:
+  name: esphome-web-9c6ec8
+  friendly_name: HAAB
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+api:
+ota:
+  platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    password: "${wifi_ap_password}"
+
+# =========================
+# Globals & Settings
+# =========================
+globals:
+  - id: current_page
+    type: int
+    restore_value: yes
+    initial_value: '1'
+  - id: screen_on
+    type: bool
+    restore_value: yes
+    initial_value: 'true'
+  - id: auto_sleep_enabled
+    type: bool
+    restore_value: yes
+    initial_value: 'true'
+  - id: screen_timeout_s
+    type: int
+    restore_value: yes
+    initial_value: '60'
+  - id: show_activate_enabled
+    type: bool
+    restore_value: yes
+    initial_value: 'true'
+  - id: display_message
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: message_line1
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: message_line2
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: homeassistant_event_triggered
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# =========================
+# User-facing controls in HA
+# =========================
+switch:
+  - platform: template
+    name: "Keypad: Screen Power"
+    id: sw_screen_power
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    lambda: |-
+      return id(screen_on);
+    turn_on_action:
+      - lambda: |-
+          id(screen_on) = true;
+      - script.execute: restart_sleep_timer
+    turn_off_action:
+      - lambda: |-
+          id(screen_on) = false;
+
+  - platform: template
+    name: "Keypad: Auto Sleep"
+    id: sw_auto_sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    lambda: |-
+      return id(auto_sleep_enabled);
+    turn_on_action:
+      - lambda: |-
+          id(auto_sleep_enabled) = true;
+      - script.execute: restart_sleep_timer
+    turn_off_action:
+      - lambda: |-
+          id(auto_sleep_enabled) = false;
+
+  - platform: template
+    name: "Keypad: Show Activation Message"
+    id: sw_show_activation
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    lambda: |-
+      return id(show_activate_enabled);
+    turn_on_action:
+      - lambda: |-
+          id(show_activate_enabled) = true;
+    turn_off_action:
+      - lambda: |-
+          id(show_activate_enabled) = false;
+
+number:
+  - platform: template
+    name: "Keypad: Screen Timeout (s)"
+    id: nb_timeout
+    optimistic: true
+    restore_value: true
+    min_value: 5
+    max_value: 600
+    step: 5
+    initial_value: 60
+    set_action:
+      - lambda: |-
+          id(screen_timeout_s) = (int) x;
+      - script.execute: restart_sleep_timer
+
+# =========================
+# Sleep timer (auto-off)
+# =========================
+script:
+  - id: restart_sleep_timer
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: 'return id(screen_on) && id(auto_sleep_enabled);'
+          then:
+            - delay: !lambda 'return (uint32_t) id(screen_timeout_s) * 1000u;'
+            - if:
+                condition:
+                  lambda: 'return id(screen_on) && id(auto_sleep_enabled);'
+                then:
+                  - lambda: |-
+                      id(screen_on) = false;
+                      id(sw_screen_power).publish_state(false);
+
+  - id: show_activation
+    parameters:
+      button: int
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: 'return id(show_activate_enabled);'
+          then:
+            - lambda: |-
+                auto get_label = [](int page, int btn) -> std::string {
+                  switch (page) {
+                    case 1:
+                      if (btn == 1) return std::string("${p1_b1_label}");
+                      if (btn == 2) return std::string("${p1_b2_label}");
+                      if (btn == 3) return std::string("${p1_b3_label}");
+                      if (btn == 4) return std::string("${p1_b4_label}");
+                      break;
+                    case 2:
+                      if (btn == 1) return std::string("${p2_b1_label}");
+                      if (btn == 2) return std::string("${p2_b2_label}");
+                      if (btn == 3) return std::string("${p2_b3_label}");
+                      if (btn == 4) return std::string("${p2_b4_label}");
+                      break;
+                    case 3:
+                      if (btn == 1) return std::string("${p3_b1_label}");
+                      if (btn == 2) return std::string("${p3_b2_label}");
+                      if (btn == 3) return std::string("${p3_b3_label}");
+                      if (btn == 4) return std::string("${p3_b4_label}");
+                      break;
+                    case 4:
+                      if (btn == 1) return std::string("${p4_b1_label}");
+                      if (btn == 2) return std::string("${p4_b2_label}");
+                      if (btn == 3) return std::string("${p4_b3_label}");
+                      if (btn == 4) return std::string("${p4_b4_label}");
+                      break;
+                  }
+                  return std::string("");
+                };
+                std::string label = get_label(id(current_page), button);
+                size_t pos = label.find(": ");
+                if (pos != std::string::npos) {
+                  id(message_line1) = label.substr(pos + 2);
+                } else {
+                  id(message_line1) = label;
+                }
+                id(message_line2) = "Activated";
+                id(display_message) = true;
+            - delay: 2s
+            - lambda: |-
+                id(display_message) = false;
+
+# =========================
+# Expose state to Home Assistant
+# =========================
+sensor:
+  - platform: template
+    name: "Keypad Current Page"
+    id: sensor_page
+    lambda: |-
+      return (float) id(current_page);
+    update_interval: 1s
+
+text_sensor:
+  - platform: template
+    name: "Keypad Current Page Label"
+    id: ts_page_label
+    lambda: |-
+      char buf[3];
+      snprintf(buf, sizeof(buf), "P%d", id(current_page));
+      return {buf};
+    update_interval: 1s
+  - platform: template
+    name: "Keypad Firmware Version"
+    id: sensor_version
+    lambda: |-
+      return {"${version_number}"};
+    update_interval: 60s
+
+# =========================
+# SPI + Fonts + Display
+# =========================
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 14
+  - file: "gfonts://Roboto"
+    id: font_big
+    size: 18
+
+display:
+  - platform: ssd1306_spi
+    model: "SH1106 128x64"
+    cs_pin: GPIO5
+    dc_pin: GPIO16
+    reset_pin: GPIO17
+    id: oled_display
+    rotation: 180
+    update_interval: 500ms
+    pages:
+      - id: page_main
+        lambda: |-
+          if (!id(screen_on)) return;
+
+          if (id(display_message)) {
+            it.print(64, 20, id(font_small), TextAlign::BASELINE_CENTER, id(message_line1).c_str());
+            it.print(64, 40, id(font_small), TextAlign::BASELINE_CENTER, id(message_line2).c_str());
+          } else {
+            const int y1 = -2;
+            const int y2 = 12;
+            const int y3 = 26;
+            const int y4 = 40;
+
+            auto get_label = [](int page, int btn) -> std::string {
+              switch (page) {
+                case 1:
+                  if (btn == 1) return std::string("${p1_b1_label}");
+                  if (btn == 2) return std::string("${p1_b2_label}");
+                  if (btn == 3) return std::string("${p1_b3_label}");
+                  if (btn == 4) return std::string("${p1_b4_label}");
+                  break;
+                case 2:
+                  if (btn == 1) return std::string("${p2_b1_label}");
+                  if (btn == 2) return std::string("${p2_b2_label}");
+                  if (btn == 3) return std::string("${p2_b3_label}");
+                  if (btn == 4) return std::string("${p2_b4_label}");
+                  break;
+                case 3:
+                  if (btn == 1) return std::string("${p3_b1_label}");
+                  if (btn == 2) return std::string("${p3_b2_label}");
+                  if (btn == 3) return std::string("${p3_b3_label}");
+                  if (btn == 4) return std::string("${p3_b4_label}");
+                  break;
+                case 4:
+                  if (btn == 1) return std::string("${p4_b1_label}");
+                  if (btn == 2) return std::string("${p4_b2_label}");
+                  if (btn == 3) return std::string("${p4_b3_label}");
+                  if (btn == 4) return std::string("${p4_b4_label}");
+                  break;
+              }
+              return std::string("");
+            };
+
+            it.print(6, y1, id(font_small), get_label(id(current_page), 1).c_str());
+            it.print(6, y2, id(font_small), get_label(id(current_page), 2).c_str());
+            it.print(6, y3, id(font_small), get_label(id(current_page), 3).c_str());
+            it.print(6, y4, id(font_small), get_label(id(current_page), 4).c_str());
+
+            char buf[8];
+            snprintf(buf, sizeof(buf), "P%d", id(current_page));
+            it.print(110, 54, id(font_big), TextAlign::BOTTOM_RIGHT, buf);
+          }
+
+# =========================
+# Optional soft buttons to force page
+# =========================
+button:
+  - platform: template
+    name: "Keypad: Set Page 1"
+    on_press:
+      - lambda: |-
+          id(current_page) = 1;
+      - script.execute: restart_sleep_timer
+  - platform: template
+    name: "Keypad: Set Page 2"
+    on_press:
+      - lambda: |-
+          id(current_page) = 2;
+      - script.execute: restart_sleep_timer
+  - platform: template
+    name: "Keypad: Set Page 3"
+    on_press:
+      - lambda: |-
+          id(current_page) = 3;
+      - script.execute: restart_sleep_timer
+  - platform: template
+    name: "Keypad: Set Page 4"
+    on_press:
+      - lambda: |-
+          id(current_page) = 4;
+      - script.execute: restart_sleep_timer
+
+# =========================
+# Binary sensors (merged)
+# =========================
+binary_sensor:
+  - platform: template
+    name: "Keypad Screen Awake"
+    id: bs_screen_awake
+    lambda: |-
+      return id(screen_on);
+    device_class: power
+  - platform: gpio
+    internal: true
+    pin:
+      number: GPIO12
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Key 1"
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
+    on_multi_click:
+      - timing:
+          - ON for at least 2000ms
+        then:
+          - lambda: |-
+              if (!id(screen_on)) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+              }
+              id(current_page) = 1;
+          - script.execute: restart_sleep_timer
+      - timing:
+          - ON for at most 350ms
+          - OFF for at least 120ms
+        then:
+          - lambda: |-
+              bool was_screen_off = !id(screen_on);
+              if (was_screen_off) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+                return;
+              }
+              id(homeassistant_event_triggered) = true;
+          - if:
+              condition:
+                lambda: 'return id(homeassistant_event_triggered);'
+              then:
+                - homeassistant.event:
+                    event: esphome.keypad_event
+                    data:
+                      page: !lambda 'return to_string(id(current_page));'
+                      button: "1"
+                      click: "single"
+                - if:
+                    condition:
+                      lambda: 'return id(show_activate_enabled);'
+                    then:
+                      - script.execute:
+                          id: show_activation
+                          button: !lambda 'return 1;'
+          - lambda: |-
+              id(homeassistant_event_triggered) = false;
+          - script.execute: restart_sleep_timer
+  - platform: gpio
+    internal: true
+    pin:
+      number: GPIO13
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Key 2"
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
+    on_multi_click:
+      - timing:
+          - ON for at least 2000ms
+        then:
+          - lambda: |-
+              if (!id(screen_on)) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+              }
+              id(current_page) = 2;
+          - script.execute: restart_sleep_timer
+      - timing:
+          - ON for at most 350ms
+          - OFF for at least 120ms
+        then:
+          - lambda: |-
+              bool was_screen_off = !id(screen_on);
+              if (was_screen_off) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+                return;
+              }
+              id(homeassistant_event_triggered) = true;
+          - if:
+              condition:
+                lambda: 'return id(homeassistant_event_triggered);'
+              then:
+                - homeassistant.event:
+                    event: esphome.keypad_event
+                    data:
+                      page: !lambda 'return to_string(id(current_page));'
+                      button: "2"
+                      click: "single"
+                - if:
+                    condition:
+                      lambda: 'return id(show_activate_enabled);'
+                    then:
+                      - script.execute:
+                          id: show_activation
+                          button: !lambda 'return 2;'
+          - lambda: |-
+              id(homeassistant_event_triggered) = false;
+          - script.execute: restart_sleep_timer
+  - platform: gpio
+    internal: true
+    pin:
+      number: GPIO27
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Key 3"
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
+    on_multi_click:
+      - timing:
+          - ON for at least 2000ms
+        then:
+          - lambda: |-
+              if (!id(screen_on)) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+              }
+              id(current_page) = 3;
+          - script.execute: restart_sleep_timer
+      - timing:
+          - ON for at most 350ms
+          - OFF for at least 120ms
+        then:
+          - lambda: |-
+              bool was_screen_off = !id(screen_on);
+              if (was_screen_off) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+                return;
+              }
+              id(homeassistant_event_triggered) = true;
+          - if:
+              condition:
+                lambda: 'return id(homeassistant_event_triggered);'
+              then:
+                - homeassistant.event:
+                    event: esphome.keypad_event
+                    data:
+                      page: !lambda 'return to_string(id(current_page));'
+                      button: "3"
+                      click: "single"
+                - if:
+                    condition:
+                      lambda: 'return id(show_activate_enabled);'
+                    then:
+                      - script.execute:
+                          id: show_activation
+                          button: !lambda 'return 3;'
+          - lambda: |-
+              id(homeassistant_event_triggered) = false;
+          - script.execute: restart_sleep_timer
+  - platform: gpio
+    internal: true
+    pin:
+      number: GPIO14
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Key 4"
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
+    on_multi_click:
+      - timing:
+          - ON for at least 2000ms
+        then:
+          - lambda: |-
+              if (!id(screen_on)) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+              }
+              id(current_page) = 4;
+          - script.execute: restart_sleep_timer
+      - timing:
+          - ON for at most 350ms
+          - OFF for at least 120ms
+        then:
+          - lambda: |-
+              bool was_screen_off = !id(screen_on);
+              if (was_screen_off) {
+                id(screen_on) = true;
+                id(sw_screen_power).publish_state(true);
+                return;
+              }
+              id(homeassistant_event_triggered) = true;
+          - if:
+              condition:
+                lambda: 'return id(homeassistant_event_triggered);'
+              then:
+                - homeassistant.event:
+                    event: esphome.keypad_event
+                    data:
+                      page: !lambda 'return to_string(id(current_page));'
+                      button: "4"
+                      click: "single"
+                - if:
+                    condition:
+                      lambda: 'return id(show_activate_enabled);'
+                    then:
+                      - script.execute:
+                          id: show_activation
+                          button: !lambda 'return 4;'
+          - lambda: |-
+              id(homeassistant_event_triggered) = false;
+          - script.execute: restart_sleep_timer
