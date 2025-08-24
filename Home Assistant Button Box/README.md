@@ -1,6 +1,6 @@
 # 🔘 Home Assistant Button Box – Community Spotlight  
 
-<p>This project combines an ESP32 a small Oled screen and some buttons into a compact button box for Home Assistant. Designed originally by <a href="https://makerworld.com/en/models/1478816-habb-home-assistant-button-box-esphome#profileId-1543829">Akelyte</a> 
+<p>This project combines an ESP32, a small OLED screen, and some buttons into a compact button box for Home Assistant. Designed originally by <a href="https://makerworld.com/en/models/1478816-habb-home-assistant-button-box-esphome#profileId-1543829">Akelyte</a> 
   (full credit to them), I’ve put my own spin on it with added features, a new enclosure, and extra ESPHome tweaks. Watch the full video <a href="https://youtu.be/0jHDhyW68ow" target="_blank">here</a>.</p>  
 
 <img src="https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Images/thumbnails/HABB.png" width="500">  
@@ -27,7 +27,7 @@
 | SH1106 OLED Display | 1.3" I²C display                        | [Buy on Amazon](https://amzn.to/45TSo9l) |
 | Membrane Keypad     | 1x4 keypad                              | [Buy on Amazon](https://amzn.to/4fPqJuC) |
 | Dupont Wires        | Jumper cables for connections           | [Buy on Amazon](https://amzn.to/41jYiz3) |
-| 3D Printed Enclosure| Original design by Akelyte, modded by me | [MakerWorld Link](https://makerworld.com/en/models/xxxx) |
+| 3D Printed Enclosure| Original design by Akelyte, modded by me | [MakerWorld Link](https://makerworld.com/en/models/1478816-habb-home-assistant-button-box-esphome#profileId-1543829) |
 
 💡 Don’t have a 3D printer? Services like **PCBWay** offer on-demand printing — just upload the STL, pick your material/finish, and get it shipped.  
 <br>  
@@ -52,6 +52,12 @@ A ready-to-use **Home Assistant blueprint** is included to simplify automation s
 5. (Optional) Adjust substitutions to tweak sleep timer, pages, etc.  
 <br>  
 
+## 🔌 Wiring Diagram  
+
+Here’s how to wire the ESP32, OLED display, and keypad together:  
+
+<img src="https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Home%20Assistant%20Button%20Box/Diagrams/habb%20diagram.png" width="600">  
+<br>  
 
 ## 🧠 Custom Logic Highlights  
 
@@ -64,15 +70,21 @@ A ready-to-use **Home Assistant blueprint** is included to simplify automation s
 ## 🖼 Enclosure  
 
 - Original slimline case: Akelyte’s MakerWorld project  
-- My mod: Taller body to fit Wago clips → no soldering, no header cutting  (In my final version I actually only used the dupont wires)
+- My mod: Taller body to fit Wago clips → no soldering, no header cutting (In my final version I actually only used the dupont wires)  
 - Optional **magnet or bracket mount** for walls/racks  
+<br>  
+
+## 💻 Code  
+
+- 🔗 [ESPHome YAML (MWT HABB.yaml)](https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Home%20Assistant%20Button%20Box/MWT%20HABB.yaml)  
+- 🔗 [Home Assistant Blueprint]( ) (coming soon)  
 <br>  
 
 ## 📢 Credits  
 
 - Original project & enclosure: [Akelyte](https://makerworld.com/en/models/1478816-habb-home-assistant-button-box-esphome#profileId-1543829)  
 - Modified code, features, and box: [Mark Watt Tech](https://youtube.com/@MarkWattTech)  
-- Community spotlight video: [Watch here](https://youtu.be/jZzNDveuDVY)  
+- Community spotlight video: [Watch here](https://youtu.be/0jHDhyW68ow)  
 
 <br>  
 
@@ -86,4 +98,3 @@ If you enjoyed this project and want to support me:
 - ❤️ [Patreon](https://www.patreon.com/markwatttech)  
 
 Thanks for helping me keep making these open-source smart home builds! 🚀  
-
