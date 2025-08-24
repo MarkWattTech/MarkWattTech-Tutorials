@@ -1,7 +1,7 @@
 # 🔘 Home Assistant Button Box – Community Spotlight  
 
 <p>This project combines an ESP32 a small Oled screen and some buttons into a compact button box for Home Assistant. Designed originally by <a href="https://makerworld.com/en/models/1478816-habb-home-assistant-button-box-esphome#profileId-1543829">Akelyte</a> 
-  (full credit to them), I’ve put my own spin on it with added features, a new enclosure, and extra ESPHome tweaks. Watch the full video <a href="https://youtu.be/jZzNDveuDVY" target="_blank">here</a>.</p>  
+  (full credit to them), I’ve put my own spin on it with added features, a new enclosure, and extra ESPHome tweaks. Watch the full video <a href="https://youtu.be/0jHDhyW68ow" target="_blank">here</a>.</p>  
 
 <img src="https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Images/thumbnails/HABB.png" width="500">  
 <br>  
@@ -86,3 +86,4 @@ If you enjoyed this project and want to support me:
 - ❤️ [Patreon](https://www.patreon.com/markwatttech)  
 
 Thanks for helping me keep making these open-source smart home builds! 🚀  
+
