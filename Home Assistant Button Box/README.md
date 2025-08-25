@@ -72,13 +72,18 @@ Here’s how to wire the ESP32, OLED display, and keypad together:
 - Original slimline case: Akelyte’s MakerWorld project  
 - My mod: Taller body to fit Wago clips → no soldering, no header cutting (In my final version I actually only used the dupont wires)  
 - Optional **magnet or bracket mount** for walls/racks  
+
+🔗 [Download Enclosure STL Files](https://github.com/MarkWattTech/MarkWattTech-Tutorials/tree/main/Home%20Assistant%20Button%20Box/Enclosure%20Files)  
 <br>  
 
 ## 💻 Code  
 
 - 🔗 [ESPHome YAML (MWT HABB.yaml)](https://github.com/MarkWattTech/MarkWattTech-Tutorials/blob/main/Home%20Assistant%20Button%20Box/MWT%20HABB.yaml)  
-- 🔗 [Home Assistant Blueprint]( ) (coming soon)  
-<br>  
+
+- 🧩 Home Assistant Blueprint  
+  [![Import Blueprint to My Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgist.githubusercontent.com%2FMarkWattTech%2Fd9bf68718d88fa20dbc0921470079b23%2Fraw)  
+  <sub>Direct link (fallback): https://gist.github.com/MarkWattTech/d9bf68718d88fa20dbc0921470079b23</sub>
+
 
 ## 📢 Credits  
 
